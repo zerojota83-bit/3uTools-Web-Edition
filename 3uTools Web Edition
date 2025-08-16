@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3uTools Web Edition</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --sidebar-bg: #2c3e50;
+            --primary-color: #3498db;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --dark-bg: #1a202c;
+            --text-color: #ecf0f1;
+            --sidebar-width: 250px;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: #212529;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .sidebar {
+            background-color: var(--sidebar-bg);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            width: var(--sidebar-width);
+            padding: 20px;
+        }
+        
+        .sidebar-logo {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .nav-btn {
+            text-align: left;
+            padding: 12px;
+            border: none;
+            color: white;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 5px;
+            background: transparent;
+            border-radius: 5px;
+        }
+        
+        .nav-btn:hover {
+            background-color: var(--primary-color);
+        }
+        
+        .device-status {
+            text-align: center;
+            padding-bottom: 20px;
+        }
+        
+        .connected {
+            color: var(--success-color);
+        }
+        
+        .disconnected {
+            color: var(--danger-color);
+        }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+        }
+        
+        .status-bar {
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .log-output {
+            background-color: var(--dark-bg);
+            color: #cbd5e0;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 15px;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log-info {
+            color: #63b3ed;
+        }
+        
+        .log-success {
+            color: #68d391;
+        }
+        
+        .log-warning {
+            color: #faf089;
+        }
+        
+        .log-error {
+            color: #fc8181;
+        }
+        
+        .device-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .progress-thin {
+            height: 10px;
+        }
+        
+        .firmware-item, .jb-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        
+        .firmware-item:hover, .jb-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .firmware-item.active, .jb-item.active {
+            background-color: #e3f2fd;
+        }
+        
+        .app-list, .file-list {
+            height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-logo">3uTools Web Edition</div>
+        <div class="device-status">
+            <span id="device-status-icon"><i class="fas fa-times-circle"></i></span>
+            <span id="device-status-text">No Device</span>
+        </div>
+        
+        <button class="nav-btn" onclick="showTab('dashboard')">
+            <i class="fas fa-home"></i> Dashboard
+        </button>
+        <button class="nav-btn" onclick="showTab('flash')">
+            <i class="fas fa-bolt"></i> Flash & JB
+        </button>
+        <button class="nav-btn" onclick="showTab('apps')">
+            <i class="fas fa-th-large"></i> Apps
+        </button>
+        <button class="nav-btn" onclick="showTab('files')">
+            <i class="fas fa-folder"></i> Files
+        </button>
+        <button class="nav-btn" onclick="showTab('backup')">
+            <i class="fas fa-save"></i> Backup
+        </button>
+        <button class="nav-btn" onclick="showTab('toolbox')">
+            <i class="fas fa-tools"></i> Toolbox
+        </button>
+        <button class="nav-btn" onclick="showTab('settings')">
+            <i class="fas fa-cog"></i> Settings
+        </button>
+    </div>
+    
+    <div class="main-content">
+        <div class="status-bar d-flex align-items-center">
+            <span id="device-name" class="fw-bold me-3">No device connected</span>
+            <span id="device-model" class="me-3"></span>
+            <span id="ios-version" class="me-3"></span>
+            <span id="battery-level" class="me-3"></span>
+            <span id="storage-info" class="me-3"></span>
+            <button class="btn btn-sm btn-primary ms-auto" onclick="checkDevice()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+        
+        <div class="tab-content" id="dashboard-tab">
+            <h4><i class="fas fa-tachometer-alt"></i> Dashboard</h4>
+            <hr>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="device-card">
+                        <h5><i class="fas fa-mobile-alt"></i> Device Information</h5>
+                        <div id="device-info">
+                            <p>Connect an iOS device to view information</p>
+                        </div>
+                        
+                        <div class="d-flex mt-3">
+                            <button class="btn btn-primary me-2" onclick="takeScreenshot()">
+                                <i class="fas fa-camera"></i> Take Screenshot
+                            </button>
+                            <button class="btn btn-warning" onclick="rebootDevice()">
+                                <i class="fas fa-power-off"></i> Reboot Device
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="device-card">
+                        <h5><i class="fas fa-chart-line"></i> System Status</h5>
+                        
+                        <div class="mb-4">
+                            <h6>Storage</h6>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Used Space:</span>
+                                <span id="storage-percent">0%</span>
+                            </div>
+                            <div class="progress progress-thin">
+                                <div id="storage-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h6>Battery</h6>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Battery Level:</span>
+                                <span id="battery-percent">0%</span>
+                            </div>
+                            <div class="progress progress-thin">
+                                <div id="battery-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="flash-tab" style="display: none;">
+            <h4><i class="fas fa-bolt"></i> Flash & Jailbreak</h4>
+            <hr>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="device-card">
+                        <h5><i class="fas fa-download"></i> Firmware Operations</h5>
+                        <p>Available Firmware:</p>
+                        <div id="firmware-list" class="mb-3">
+                            <div class="firmware-item">iOS 16.6 (20G75)</div>
+                            <div class="firmware-item">iOS 15.7.8 (19H364)</div>
+                            <div class="firmware-item">iOS 17.0 Beta 3 (21A5277h)</div>
+                        </div>
+                        
+                        <div class="progress mb-3">
+                            <div id="flash-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        
+                        <button class="btn btn-primary w-100" onclick="startFlash()">
+                            <i class="fas fa-play"></i> Flash Selected Firmware
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="device-card">
+                        <h5><i class="fas fa-lock-open"></i> Jailbreak Operations</h5>
+                        <p>Available Jailbreaks:</p>
+                        <div id="jb-list" class="mb-3">
+                            <div class="jb-item">checkra1n</div>
+                            <div class="jb-item">unc0ver</div>
+                            <div class="jb-item">Taurine</div>
+                            <div class="jb-item">palera1n</div>
+                        </div>
+                        
+                        <div class="progress mb-3">
+                            <div id="jb-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        
+                        <button class="btn btn-danger w-100" onclick="startJailbreak()">
+                            <i class="fas fa-bomb"></i> Jailbreak Device
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="apps-tab" style="display: none;">
+            <h4><i class="fas fa-th-large"></i> Apps Management</h4>
+            <hr>
+            
+            <div class="device-card">
+                <div class="table-responsive app-list">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Version</th>
+                                <th>Size</th>
+                                <th>Identifier</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="app-table-body">
+                            <!-- Apps will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="d-flex mt-3">
+                    <button class="btn btn-primary me-2" onclick="installIPA()">
+                        <i class="fas fa-plus"></i> Install IPA
+                    </button>
+                    <button class="btn btn-danger me-2" onclick="uninstallApp()">
+                        <i class="fas fa-trash"></i> Uninstall Selected
+                    </button>
+                    <button class="btn btn-secondary" onclick="refreshAppList()">
+                        <i class="fas fa-sync-alt"></i> Refresh List
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="files-tab" style="display: none;">
+            <h4><i class="fas fa-folder"></i> File Browser</h4>
+            <hr>
+            
+            <div class="device-card">
+                <div class="file-list mb-3">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Size</th>
+                                <th>Modified</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="file-table-body">
+                            <!-- Files will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="d-flex">
+                    <button class="btn btn-primary me-2" onclick="uploadFile()">
+                        <i class="fas fa-upload"></i> Upload File
+                    </button>
+                    <button class="btn btn-success me-2" onclick="downloadFile()">
+                        <i class="fas fa-download"></i> Download Selected
+                    </button>
+                    <button class="btn btn-danger me-2" onclick="deleteFile()">
+                        <i class="fas fa-trash"></i> Delete Selected
+                    </button>
+                    <button class="btn btn-secondary" onclick="refreshFileBrowser()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="backup-tab" style="display: none;">
+            <h4><i class="fas fa-save"></i> Backup & Restore</h4>
+            <hr>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="device-card">
+                        <h5><i class="fas fa-file-archive"></i> Backup</h5>
+                        
+                        <div class="progress mb-3">
+                            <div id="backup-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        
+                        <button class="btn btn-primary w-100" onclick="createBackup()">
+                            <i class="fas fa-plus"></i> Create Backup
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="device-card">
+                        <h5><i class="fas fa-file-import"></i> Restore</h5>
+                        
+                        <div class="progress mb-3">
+                            <div id="restore-progress" class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        
+                        <button class="btn btn-warning w-100" onclick="restoreBackup()">
+                            <i class="fas fa-undo"></i> Restore Backup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="toolbox-tab" style="display: none;">
+            <h4><i class="fas fa-tools"></i> Toolbox</h4>
+            <hr>
+            
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="device-card">
+                        <h5><i class="fas fa-camera"></i> Screenshot</h5>
+                        <p>Capture device screen</p>
+                        <button class="btn btn-primary w-100" onclick="takeScreenshot()">
+                            <i class="fas fa-camera"></i> Take Screenshot
+                        </button>
+                    </div>
+                    
+                    <div class="device-card mt-3">
+                        <h5><i class="fas fa-info-circle"></i> System Info</h5>
+                        <p>View detailed device information</p>
+                        <button class="btn btn-info w-100" onclick="showSystemInfo()">
+                            <i class="fas fa-info-circle"></i> Show Info
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="device-card">
+                        <h5><i class="fas fa-power-off"></i> Power</h5>
+                        <p>Control device power state</p>
+                        <button class="btn btn-warning w-100 mb-2" onclick="rebootDevice()">
+                            <i class="fas fa-redo"></i> Reboot
+                        </button>
+                        <button class="btn btn-danger w-100" onclick="shutdownDevice()">
+                            <i class="fas fa-power-off"></i> Shutdown
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="device-card">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Advanced</h5>
+                        <p>Advanced device operations</p>
+                        <button class="btn btn-danger w-100 mb-2" onclick="eraseDevice()">
+                            <i class="fas fa-eraser"></i> Erase Device
+                        </button>
+                        <button class="btn btn-warning w-100" onclick="enterRecovery()">
+                            <i class="fas fa-microchip"></i> Enter Recovery
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="settings-tab" style="display: none;">
+            <h4><i class="fas fa-cog"></i> Settings</h4>
+            <hr>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="device-card">
+                        <h5><i class="fas fa-sliders-h"></i> General Settings</h5>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Backup Location:</label>
+                            <div class="input-group">
+                                <input type="text" id="backup-path" class="form-control" 
+                                       value="~/3uTools_Backups" readonly>
+                                <button class="btn btn-outline-secondary" onclick="setBackupLocation()">
+                                    <i class="fas fa-folder-open"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Theme:</label>
+                            <select id="theme-select" class="form-select">
+                                <option>Dark</option>
+                                <option>Light</option>
+                                <option>System</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="device-card">
+                        <h5><i class="fas fa-user-shield"></i> Advanced Settings</h5>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="dev-mode">
+                            <label class="form-check-label" for="dev-mode">Enable Developer Mode</label>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> Advanced settings may affect system stability.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-output" id="log-output">
+            <!-- Log messages will appear here -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Current device state
+        let deviceConnected = false;
+        let deviceInfo = {};
+        let selectedFirmware = null;
+        let selectedJB = null;
+        let selectedApp = null;
+        let selectedFile = null;
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up event listeners for firmware and JB selection
+            document.querySelectorAll('.firmware-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.firmware-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    selectedFirmware = this.textContent;
+                });
+            });
+            
+            document.querySelectorAll('.jb-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.jb-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    selectedJB = this.textContent;
+                });
+            });
+            
+            // Initial device check
+            checkDevice();
+        });
+        
+        // Tab navigation
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            document.getElementById(tabId + '-tab').style.display = 'block';
+        }
+        
+        // Device management functions
+        function checkDevice() {
+            // In a real implementation, this would check for connected devices
+            // For demo purposes, we'll simulate a connected device
+            logMessage("Checking for connected devices...", "info");
+            
+            setTimeout(() => {
+                // Simulate finding a device
+                deviceConnected = true;
+                deviceInfo = {
+                    deviceName: "John's iPhone",
+                    productType: "iPhone12,1",
+                    productVersion: "16.5",
+                    serialNumber: "ABCD12345678",
+                    batteryLevel: "87",
+                    storageUsed: "64",
+                    storageTotal: "128"
+                };
+                
+                updateDeviceStatus();
+                logMessage("Device connected: " + deviceInfo.deviceName, "success");
+                
+                // Update app list and file browser
+                refreshAppList();
+                refreshFileBrowser();
+            }, 1000);
+        }
+        
+        function updateDeviceStatus() {
+            const statusIcon = document.getElementById('device-status-icon');
+            const statusText = document.getElementById('device-status-text');
+            
+            if (deviceConnected) {
+                statusIcon.innerHTML = '<i class="fas fa-check-circle connected"></i>';
+                statusText.textContent = 'Device Connected';
+                statusText.className = 'connected';
+                
+                // Update status bar
+                document.getElementById('device-name').textContent = deviceInfo.deviceName;
+                document.getElementById('device-model').textContent = 'Model: ' + deviceInfo.productType;
+                document.getElementById('ios-version').textContent = 'iOS: ' + deviceInfo.productVersion;
+                document.getElementById('battery-level').textContent = 'Battery: ' + deviceInfo.batteryLevel + '%';
+                document.getElementById('storage-info').textContent = 'Storage: ' + 
+                    deviceInfo.storageUsed + 'GB of ' + deviceInfo.storageTotal + 'GB';
+                
+                // Update dashboard
+                const storagePercent = Math.round((parseInt(deviceInfo.storageUsed) / parseInt(deviceInfo.storageTotal)) * 100);
+                document.getElementById('storage-percent').textContent = storagePercent + '%';
+                document.getElementById('storage-progress').style.width = storagePercent + '%';
+                
+                document.getElementById('battery-percent').textContent = deviceInfo.batteryLevel + '%';
+                document.getElementById('battery-progress').style.width = deviceInfo.batteryLevel + '%';
+                
+                document.getElementById('device-info').innerHTML = `
+                    <p><strong>Device Name:</strong> ${deviceInfo.deviceName}</p>
+                    <p><strong>Model:</strong> ${deviceInfo.productType}</p>
+                    <p><strong>iOS Version:</strong> ${deviceInfo.productVersion}</p>
+                    <p><strong>Serial:</strong> ${deviceInfo.serialNumber}</p>
+                    <p><strong>Battery:</strong> ${deviceInfo.batteryLevel}%</p>
+                `;
+            } else {
+                statusIcon.innerHTML = '<i class="fas fa-times-circle disconnected"></i>';
+                statusText.textContent = 'No Device';
+                statusText.className = 'disconnected';
+                
+                // Clear status bar
+                document.getElementById('device-name').textContent = 'No device connected';
+                document.getElementById('device-model').textContent = '';
+                document.getElementById('ios-version').textContent = '';
+                document.getElementById('battery-level').textContent = '';
+                document.getElementById('storage-info').textContent = '';
+                
+                // Clear dashboard
+                document.getElementById('device-info').innerHTML = '<p>Connect an iOS device to view information</p>';
+                document.getElementById('storage-progress').style.width = '0%';
+                document.getElementById('battery-progress').style.width = '0%';
+            }
+        }
+        
+        // Flash & JB functions
+        function startFlash() {
+            if (!deviceConnected) {
+                logMessage("Cannot flash - no device connected", "error");
+                return;
+            }
+            
+            if (!selectedFirmware) {
+                logMessage("Please select a firmware version first", "warning");
+                return;
+            }
+            
+            logMessage(`Starting ${selectedFirmware} flash process...`, "info");
+            
+            // Simulate flash process
+            simulateProgress('flash-progress', 100, () => {
+                logMessage("Firmware flash completed successfully!", "success");
+            });
+        }
+        
+        function startJailbreak() {
+            if (!deviceConnected) {
+                logMessage("Cannot jailbreak - no device connected", "error");
+                return;
+            }
+            
+            if (!selectedJB) {
+                logMessage("Please select a jailbreak tool first", "warning");
+                return;
+            }
+            
+            logMessage(`Starting ${selectedJB} jailbreak process...`, "info");
+            
+            // Simulate jailbreak process
+            simulateProgress('jb-progress', 100, () => {
+                logMessage(`${selectedJB} jailbreak successful!`, "success");
+            });
+        }
+        
+        // Apps management
+        function refreshAppList() {
+            if (!deviceConnected) return;
+            
+            logMessage("Refreshing app list...", "info");
+            
+            // Simulate app list
+            const apps = [
+                { name: "App Store", version: "16.5", size: "256 MB", identifier: "com.apple.AppStore" },
+                { name: "Safari", version: "16.5", size: "128 MB", identifier: "com.apple.mobilesafari" },
+                { name: "Photos", version: "16.5", size: "64 MB", identifier: "com.apple.mobileslideshow" },
+                { name: "Camera", version: "16.5", size: "32 MB", identifier: "com.apple.camera" }
+            ];
+            
+            const tableBody = document.getElementById('app-table-body');
+            tableBody.innerHTML = '';
+            
+            apps.forEach(app => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${app.name}</td>
+                    <td>${app.version}</td>
+                    <td>${app.size}</td>
+                    <td>${app.identifier}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="uninstallApp('${app.identifier}', '${app.name}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            logMessage("App list refreshed", "success");
+        }
+        
+        function installIPA() {
+            if (!deviceConnected) {
+                logMessage("Cannot install - no device connected", "error");
+                return;
+            }
+            
+            // In a real app, this would open a file dialog
+            logMessage("Please select an IPA file to install", "info");
+            
+            // Simulate file selection and installation
+            setTimeout(() => {
+                logMessage("Installing app...", "info");
+                
+                setTimeout(() => {
+                    logMessage("App installed successfully!", "success");
+                    refreshAppList();
+                }, 2000);
+            }, 500);
+        }
+        
+        function uninstallApp(identifier, name) {
+            if (!deviceConnected) {
+                logMessage("Cannot uninstall - no device connected", "error");
+                return;
+            }
+            
+            if (!identifier || !name) {
+                logMessage("Please select an app first", "warning");
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to uninstall ${name}?`)) {
+                logMessage(`Uninstalling ${name}...`, "info");
+                
+                setTimeout(() => {
+                    logMessage(`${name} uninstalled successfully!`, "success");
+                    refreshAppList();
+                }, 1500);
+            }
+        }
+        
+        // File management
+        function refreshFileBrowser() {
+            if (!deviceConnected) return;
+            
+            logMessage("Refreshing file browser...", "info");
+            
+            // Simulate file system
+            const files = [
+                { name: "Documents", size: "--", modified: "2023-06-15", isDir: true },
+                { name: "Photos", size: "--", modified: "2023-06-10", isDir: true },
+                { name: "file1.txt", size: "12 KB", modified: "2023-06-01", isDir: false },
+                { name: "image.jpg", size: "2.4 MB", modified: "2023-05-28", isDir: false }
+            ];
+            
+            const tableBody = document.getElementById('file-table-body');
+            tableBody.innerHTML = '';
+            
+            files.forEach(file => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <i class="fas ${file.isDir ? 'fa-folder' : 'fa-file'} me-2"></i>
+                        ${file.name}
+                    </td>
+                    <td>${file.size}</td>
+                    <td>${file.modified}</td>
+                    <td>
+                        ${!file.isDir ? `
+                        <button class="btn btn-sm btn-success me-1" onclick="downloadFile('${file.name}')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        ` : ''}
+                        <button class="btn btn-sm btn-danger" onclick="deleteFile('${file.name}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            logMessage("File browser refreshed", "success");
+        }
+        
+        function uploadFile() {
+            if (!deviceConnected) {
+                logMessage("Cannot upload - no device connected", "error");
+                return;
+            }
+            
+            // In a real app, this would open a file dialog
+            logMessage("Please select a file to upload", "info");
+            
+            // Simulate file selection and upload
+            setTimeout(() => {
+                logMessage("Uploading file...", "info");
+                
+                setTimeout(() => {
+                    logMessage("File uploaded successfully!", "success");
+                    refreshFileBrowser();
+                }, 2000);
+            }, 500);
+        }
+        
+        function downloadFile(filename) {
+            if (!deviceConnected) {
+                logMessage("Cannot download - no device connected", "error");
+                return;
+            }
+            
+            if (!filename) {
+                logMessage("Please select a file first", "warning");
+                return;
+            }
+            
+            logMessage(`Downloading ${filename}...`, "info");
+            
+            setTimeout(() => {
+                logMessage(`File ${filename} downloaded successfully!`, "success");
+            }, 1500);
+        }
+        
+        function deleteFile(filename) {
+            if (!deviceConnected) {
+                logMessage("Cannot delete - no device connected", "error");
+                return;
+            }
+            
+            if (!filename) {
+                logMessage("Please select a file first", "warning");
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to delete ${filename}?`)) {
+                logMessage(`Deleting ${filename}...`, "info");
+                
+                setTimeout(() => {
+                    logMessage(`${filename} deleted successfully!`, "success");
+                    refreshFileBrowser();
+                }, 1500);
+            }
+        }
+        
+        // Backup functions
+        function createBackup() {
+            if (!deviceConnected) {
+                logMessage("Cannot backup - no device connected", "error");
+                return;
+            }
+            
+            logMessage("Starting backup process...", "info");
+            
+            // Simulate backup process
+            simulateProgress('backup-progress', 100, () => {
+                logMessage("Backup completed successfully!", "success");
+            });
+        }
+        
+        function restoreBackup() {
+            if (!deviceConnected) {
+                logMessage("Cannot restore - no device connected", "error");
+                return;
+            }
+            
+            if (confirm("Restoring will erase all data on your device. Continue?")) {
+                logMessage("Starting restore process...", "info");
+                
+                // Simulate restore process
+                simulateProgress('restore-progress', 100, () => {
+                    logMessage("Restore completed successfully!", "success");
+                });
+            }
+        }
+        
+        // Toolbox functions
+        function takeScreenshot() {
+            if (!deviceConnected) {
+                logMessage("Cannot take screenshot - no device connected", "error");
+                return;
+            }
+            
+            logMessage("Taking screenshot...", "info");
+            
+            setTimeout(() => {
+                logMessage("Screenshot saved!", "success");
+            }, 1000);
+        }
+        
+        function showSystemInfo() {
+            if (!deviceConnected) {
+                logMessage("Cannot show info - no device connected", "error");
+                return;
+            }
+            
+            const info = `
+                <pre>
+Device Name: ${deviceInfo.deviceName}
+Model: ${deviceInfo.productType}
+iOS Version: ${deviceInfo.productVersion}
+Serial: ${deviceInfo.serialNumber}
+Battery: ${deviceInfo.batteryLevel}%
+Storage: ${deviceInfo.storageUsed}GB of ${deviceInfo.storageTotal}GB
+                </pre>
+            `;
+            
+            alert(info);
+        }
+        
+        function rebootDevice() {
+            if (!deviceConnected) {
+                logMessage("Cannot reboot - no device connected", "error");
+                return;
+            }
+            
+            if (confirm("Are you sure you want to reboot the device?")) {
+                logMessage("Rebooting device...", "info");
+                
+                setTimeout(() => {
+                    logMessage("Device rebooted successfully!", "success");
+                }, 1500);
+            }
+        }
+        
+        function shutdownDevice() {
+            if (!deviceConnected) {
+                logMessage("Cannot shutdown - no device connected", "error");
+                return;
+            }
+            
+            if (confirm("Are you sure you want to shutdown the device?")) {
+                logMessage("Shutting down device...", "info");
+                
+                setTimeout(() => {
+                    logMessage("Device shutdown successfully!", "success");
+                }, 1500);
+            }
+        }
+        
+        function enterRecovery() {
+            if (!deviceConnected) {
+                logMessage("Cannot enter recovery - no device connected", "error");
+                return;
+            }
+            
+            if (confirm("Entering recovery mode will disconnect the device. Continue?")) {
+                logMessage("Entering recovery mode...", "info");
+                
+                setTimeout(() => {
+                    logMessage("Device is now in recovery mode", "success");
+                    deviceConnected = false;
+                    updateDeviceStatus();
+                }, 1500);
+            }
+        }
+        
+        function eraseDevice() {
+            if (!deviceConnected) {
+                logMessage("Cannot erase - no device connected", "error");
+                return;
+            }
+            
+            if (confirm("This will erase ALL data on the device. Are you sure?")) {
+                logMessage("Erasing device...", "info");
+                
+                setTimeout(() => {
+                    logMessage("Device erased successfully!", "success");
+                    deviceConnected = false;
+                    updateDeviceStatus();
+                }, 2000);
+            }
+        }
+        
+        // Settings functions
+        function setBackupLocation() {
+            // In a real app, this would open a directory dialog
+            const path = prompt("Enter backup location path:", document.getElementById('backup-path').value);
+            if (path) {
+                document.getElementById('backup-path').value = path;
+                logMessage(`Backup location set to: ${path}`, "success");
+            }
+        }
+        
+        // Utility functions
+        function logMessage(message, level = "info") {
+            const logOutput = document.getElementById('log-output');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const levelClass = {
+                info: 'log-info',
+                success: 'log-success',
+                warning: 'log-warning',
+                error: 'log-error'
+            }[level] || '';
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = levelClass;
+            logEntry.innerHTML = `[${timestamp}] ${level.toUpperCase()}: ${message}`;
+            
+            logOutput.appendChild(logEntry);
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+        
+        function simulateProgress(elementId, duration, callback) {
+            const progressBar = document.getElementById(elementId);
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 1;
+                progressBar.style.width = progress + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    if (callback) callback();
+                }
+            }, duration / 100);
+        }
+    </script>
+</body>
+</html>
